@@ -9,6 +9,10 @@ class Loraserver:
     def __init__(self, base_url, jwt):
         self.base_url = base_url
         self.jwt = jwt
+        self.headers = {
+            'Content-Type': "application/json",
+            'Grpc-Metadata-Authorization': f"Bearer {self.jwt}"
+        }
 
     def get_jwt(self, user, password):
         pass
@@ -16,7 +20,37 @@ class Loraserver:
     def authenticate(self, user, password):
         pass
 
-    def create_device(self, applicationID, description, devEUI, deviceProfileID, name, skipFCntCheck, referenceAltitude=0):
+    def post(self, endpoint, data):
+
+        url = self.base_url + endpoint
+
+        response = requests.post(url, data=json.dumps(data), headers=self.headers)
+
+        return response.text
+
+    def get(self, endpoint):
+        pass
+
+    def delete(self, endpoint):
+        
+        url = self.base_url + endpoint
+        
+        print(url)
+
+        response = requests.delete(url, headers=self.headers)
+
+        return response.text
+
+
+class Device(Loraserver):
+
+    endpoint = "/api/devices"
+
+    def create(self, applicationID, description, devEUI, deviceProfileID, name, skipFCntCheck, referenceAltitude=0):
+        """
+        creates the given device.
+        """
+        
         data = {
             "device": {
                 "applicationID": applicationID,
@@ -29,40 +63,37 @@ class Loraserver:
             }
         }
 
-        return self.__post("/api/devices", data)
+        return self.post(self.endpoint, data)
 
-    def delete_device(self, id):
-        pass
+    def delete_device(self, dev_eui):
+        """
+        Delete deletes the device matching the given DevEUI.
+        """
 
-    def get_applications(self):
-        pass
-    
+        url = f"{self.endpoint}/{dev_eui}"
+
+        return self.delete(url)
+
+
+class DeviceProfile(Loraserver):
+
     def get_device_profiles(self):
         pass
 
-    def __post(self, endpoint, data):
 
-        headers = {
-            'Content-Type': "application/json",
-            'Grpc-Metadata-Authorization': f"Bearer {self.jwt}"
-        }
+class Application(Loraserver):
 
-        url = self.base_url + endpoint
-
-        response = requests.post(url, data=json.dumps(data), headers=headers)
-
-        return response.text
-
-    def __get(self, *args):
+    def get_applications(self):
         pass
+
 
 if __name__ == "__main__":
     
     url = 'http://iot.smartcityfrb.dk:8080'
-    jwt = 'xx'
+    jwt = '..--'
     
-    ls = Loraserver(url, jwt)
+    dev = Device(url, jwt)
 
-    res = ls.create_device('2', 'Python test fra classe', 'e444429134949491', 'de80034f-313c-477e-b6cd-4f11fe63d36e', 'python_test', True, 0)
-
+    #res = dev.create('2', 'Python test fra classe', 'e144429134249491', 'de80034f-313c-477e-b6cd-4f11fe63d36e', 'python_test3', True, 0)
+    res = dev.delete_device('e444489994949499')
     print(res)
