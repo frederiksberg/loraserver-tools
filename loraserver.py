@@ -1,10 +1,11 @@
 import requests
 import json
 
-class Loraserver:
+class LoraServerClient:
     """
     Basic interaction with Loraserver RESTful API.
     """
+    device_endpoint = "/api/devices"
 
     def __init__(self, base_url, jwt):
         self.base_url = base_url
@@ -14,13 +15,23 @@ class Loraserver:
             'Grpc-Metadata-Authorization': f"Bearer {self.jwt}"
         }
 
-    def get_jwt(self, user, password):
-        pass
+    def create_device(self, device):
+        """
+        creates the given device, from device object
+        """
 
-    def authenticate(self, user, password):
-        pass
+        return self.__post(self.device_endpoint, device.to_dict())
 
-    def post(self, endpoint, data):
+    def delete_device(self, dev_eui):
+        """
+        Delete deletes the device matching the given DevEUI.
+        """
+
+        url = f"{self.device_endpoint}/{dev_eui}"
+
+        return self.__delete(url)
+
+    def __post(self, endpoint, data):
 
         url = self.base_url + endpoint
 
@@ -28,72 +39,43 @@ class Loraserver:
 
         return response.text
 
-    def get(self, endpoint):
+    def __get(self, endpoint):
         pass
 
-    def delete(self, endpoint):
+    def __delete(self, endpoint):
         
         url = self.base_url + endpoint
-        
-        print(url)
 
         response = requests.delete(url, headers=self.headers)
 
         return response.text
 
 
-class Device(Loraserver):
+class Device:
+    """
+    Data class for devices fx. used when creating devices
+    """
+    def __init__(self, applicationID, description, devEUI, deviceProfileID, name, skipFCntCheck, referenceAltitude=0):
+        self.applicationID = applicationID
+        self.description = description
+        self.devEUI = devEUI
+        self.deviceProfileID = deviceProfileID
+        self.name = name
+        self.referenceAltitude = referenceAltitude
+        self.skipFCntCheck = skipFCntCheck
 
-    endpoint = "/api/devices"
+    def to_dict(self):
 
-    def create(self, applicationID, description, devEUI, deviceProfileID, name, skipFCntCheck, referenceAltitude=0):
-        """
-        creates the given device.
-        """
-        
-        data = {
+        d = {
             "device": {
-                "applicationID": applicationID,
-                "description": description,
-                "devEUI": devEUI,
-                "deviceProfileID": deviceProfileID,
-                "name": name,
-                "referenceAltitude": referenceAltitude,
-                "skipFCntCheck": skipFCntCheck
+                "applicationID": self.applicationID,
+                "description": self.description,
+                "devEUI": self.devEUI,
+                "deviceProfileID": self.deviceProfileID,
+                "name": self.name,
+                "referenceAltitude": self.referenceAltitude,
+                "skipFCntCheck": self.skipFCntCheck
             }
         }
 
-        return self.post(self.endpoint, data)
-
-    def delete_device(self, dev_eui):
-        """
-        Delete deletes the device matching the given DevEUI.
-        """
-
-        url = f"{self.endpoint}/{dev_eui}"
-
-        return self.delete(url)
-
-
-class DeviceProfile(Loraserver):
-
-    def get_device_profiles(self):
-        pass
-
-
-class Application(Loraserver):
-
-    def get_applications(self):
-        pass
-
-
-if __name__ == "__main__":
-    
-    url = 'http://iot.smartcityfrb.dk:8080'
-    jwt = '..--'
-    
-    dev = Device(url, jwt)
-
-    #res = dev.create('2', 'Python test fra classe', 'e144429134249491', 'de80034f-313c-477e-b6cd-4f11fe63d36e', 'python_test3', True, 0)
-    res = dev.delete_device('e444489994949499')
-    print(res)
+        return d
