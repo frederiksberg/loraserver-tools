@@ -5,11 +5,12 @@ class LoraServerClient:
     """
     Basic interaction with Loraserver RESTful API.
     """
-    device_endpoint = "/api/devices"
 
-    def __init__(self, base_url, jwt):
+    def __init__(self, base_url, user, password):
         self.base_url = base_url
-        self.jwt = jwt
+        self.user = user
+        self.password = password
+        self.jwt = self.get_jwt_token(self.user, self.password)
         self.headers = {
             'Content-Type': "application/json",
             'Grpc-Metadata-Authorization': f"Bearer {self.jwt}"
@@ -19,25 +20,49 @@ class LoraServerClient:
         """
         creates the given device, from device object
         """
+        data = {
+            "device": device.__dict__
+        }
 
-        return self.__post(self.device_endpoint, device.to_dict())
+        return self.__post("/devices", data)
+
+    def updata_device(self):
+        pass
 
     def delete_device(self, dev_eui):
         """
         Delete deletes the device matching the given DevEUI.
         """
 
-        url = f"{self.device_endpoint}/{dev_eui}"
+        url = f"/devices/{dev_eui}"
 
         return self.__delete(url)
+
+    def add_device_keys(self, device, keys):
+        pass
+
+    def get_jwt_token(self, username, password):
+        """
+        Fetch JWT token using user and password from Loraserver app.
+        """
+        data = {
+            "username": self.user,
+            "password": self.password
+        }
+        url = self.base_url + "/internal/login"
+        response = requests.post(url, data=json.dumps(data))
+
+        if response.status_code == 200:
+            return response.json()["jwt"]
+        else:
+            raise Exception(response.text)
 
     def __post(self, endpoint, data):
 
         url = self.base_url + endpoint
-
         response = requests.post(url, data=json.dumps(data), headers=self.headers)
 
-        return response.text
+        return response.text, response.status_code
 
     def __get(self, endpoint):
         pass
@@ -45,10 +70,9 @@ class LoraServerClient:
     def __delete(self, endpoint):
         
         url = self.base_url + endpoint
-
         response = requests.delete(url, headers=self.headers)
 
-        return response.text
+        return response.text, response.status_code
 
 
 class Device:
@@ -63,19 +87,3 @@ class Device:
         self.name = name
         self.referenceAltitude = referenceAltitude
         self.skipFCntCheck = skipFCntCheck
-
-    def to_dict(self):
-
-        d = {
-            "device": {
-                "applicationID": self.applicationID,
-                "description": self.description,
-                "devEUI": self.devEUI,
-                "deviceProfileID": self.deviceProfileID,
-                "name": self.name,
-                "referenceAltitude": self.referenceAltitude,
-                "skipFCntCheck": self.skipFCntCheck
-            }
-        }
-
-        return d
